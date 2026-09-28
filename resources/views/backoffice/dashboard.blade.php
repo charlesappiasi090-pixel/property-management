@@ -118,9 +118,224 @@
     @endif
 
     {{-- ------------------------------------------------------------------ --}}
-    {{-- Plan usage                                                         --}}
+    {{-- Analytics summary tiles (Phase 11)                                   --}}
     {{-- ------------------------------------------------------------------ --}}
-    <div class="grid gap-6 lg:grid-cols-3">
+    <section class="mb-6 ph-card">
+        <div class="ph-card-header d-flex justify-between align-items-center">
+            <h3 class="ph-card-title">Analytics</h3>
+            @can(\App\Enums\PermissionName::ANALYTICS_VIEW)
+                <x-button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    class="text-slate-500 hover:text-slate-700"
+                    data-ajax="/app/analytics"
+                    data-target="#analytics-modal"
+                >
+                    View details
+                </x-button>
+            @endcan
+        </div>
+
+        <div class="ph-card-body">
+            <div class="grid grid-cols-2 gap-4 md:grid-cols-4" id="analytics-tiles">
+                {{-- Tiles will be populated by AJAX --}}
+                <div class="ph-empty-state text-center">
+                    <x-icon name="loading" class="size-6 mx-auto mb-3 opacity-50" />
+                    <span class="text-slate-400">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{-- ------------------------------------------------------------------ --}}
+    {{-- Analytics modal (detail view)                                       --}}
+    {{-- ------------------------------------------------------------------ --}}
+    <div class="fixed inset-0 z-50 hidden items-center justify-center" role="dialog" aria-modal="true" id="analytics-modal">
+        <div class="bg-black/40 backdrop-bl-sm h-full w-full"></div>
+
+        <div class="relative bg-white rounded-lg w-full max-w-5xl mx-8 transform overflow-hidden shadow-2xl">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                <h2 class="text-xl font-bold text-slate-900">Analytics Dashboard</h2>
+                <button
+                    class="p-2 rounded-md hover:bg-slate-100"
+                    onclick="hideAnalyticsModal()"
+                >
+                    <x-icon name="x" class="size-4" />
+                </button>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <div class="grid grid-cols-2 gap-4" id="modal-tiles">
+                    <!-- Tiles loaded by AJAX -->
+                </div>
+
+                <div class="grid grid-cols-2 gap-4" id="modal-charts">
+                    <!-- Charts loaded by AJAX -->
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-slate-200">
+                <x-button
+                    class="w-full"
+                    onclick="hideAnalyticsModal()"
+                >
+                    Close
+                </x-button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /** Show the analytics modal and fetch data */
+        function showAnalyticsModal() {
+            fetch('/app/analytics')
+                .then(response => response.json())
+                .then(data => {
+                    // Populate tiles
+                    const tilesContainer = document.getElementById('analytics-tiles');
+                    const modalTiles = document.getElementById('modal-tiles');
+                    const modalCharts = document.getElementById('modal-charts');
+
+                    // Update dashboard tiles
+                    tilesContainer.innerHTML = '';
+                    modalTiles.innerHTML = '';
+                    modalCharts.innerHTML = '';
+
+                    // Property cards
+                    const propCards = `
+                        <div class="ph-card p-4">
+                            <div class="text-2xl font-bold tabular-nums text-slate-900">{{ data.properties.total }}</div>
+                            <div class="text-sm text-slate-500">Properties</div>
+                        </div>
+                        <div class="ph-card p-4">
+                            <div class="text-2xl font-bold tabular-nums text-slate-900">{{ data.properties.occupied_units }}</div>
+                            <div class="text-sm text-slate-500">Occupied units</div>
+                        </div>
+                        <div class="ph-card p-4">
+                            <div class="text-2xl font-bold tabular-nums text-slate-900">{{ data.properties.vacant_units }}</div>
+                            <div class="text-sm text-slate-500">Vacant units</div>
+                        </div>
+                        <div class="ph-card p-4">
+                            <div class="text-2xl font-bold tabular-nums text-slate-900">{{ data.properties.total_units }}</div>
+                            <div class="text-sm text-slate-500">Total units</div>
+                        </div>
+                    `;
+
+                    // Lease/rent cards
+                    const leaseCards = `
+                        <div class="ph-card p-4">
+                            <div class="text-2xl font-bold text-emerald-600">$${data.leases.total_monthly_rent}</div>
+                            <div class="text-sm text-slate-500">Monthly rent</div>
+                        </div>
+                        <div class="ph-card p-4">
+                            <div class="text-2xl font-bold tabular-nums text-slate-900">{{ data.leases.active }}</div>
+                            <div class="text-sm text-slate-500">Active leases</div>
+                        </div>
+                    `;
+
+                    // Revenue cards
+                    const revenueCards = `
+                        <div class="ph-card p-4">
+                            <div class="text-2xl font-bold text-emerald-600">$${data.revenue.payments_this_year}</div>
+                            <div class="text-sm text-slate-500">Revenue YTD</div>
+                        </div>
+                        <div class="ph-card p-4">
+                            <div class="text-2xl font-bold text-rose-600">-$${data.revenue.total_expenses}</div>
+                            <div class="text-sm text-slate-500">Expenses</div>
+                        </div>
+                        <div class="ph-card p-4">
+                            <div class="text-2xl font-bold text-slate-700 tabular-nums">${data.revenue.net_cash_flow}</div>
+                            <div class="text-sm text-slate-500">Net cash flow</div>
+                        </div>
+                    `;
+
+                    // Maintenance cards
+                    const maintenanceCards = `
+                        <div class="ph-card p-4">
+                            <div class="text-2xl font-bold text-rose-600">${data.maintenance.open}</div>
+                            <div class="text-sm text-slate-500">Open requests</div>
+                        </div>
+                        <div class="ph-card p-4">
+                            <div class="text-2xl font-bold text-rose-700">${data.maintenance.overdue}</div>
+                            <div class="text-sm text-slate-500">Overdue</div>
+                        </div>
+                    `;
+
+                    // Documents card
+                    const docCard = `
+                        <div class="ph-card p-4">
+                            <div class="text-2xl font-bold tabular-nums text-slate-900">{{ data.documents.total }}</div>
+                            <div class="text-sm text-slate-500">Documents</div>
+                        </div>
+                    `;
+
+                    // Messages card
+                    const msgCard = `
+                        <div class="ph-card p-4">
+                            <div class="text-2xl font-bold text-rose-600">${data.messages.unread}</div>
+                            <div class="text-sm text-slate-500">Unread messages</div>
+                        </div>
+                    `;
+
+                    tilesContainer.innerHTML = propCards + leaseCards + revenueCards + maintenanceCards + docCard + msgCard;
+
+                    // Modal tiles (same content)
+                    modalTiles.innerHTML = propCards + leaseCards + revenueCards + maintenanceCards + docCard + msgCard;
+
+                    // Chart data (stored for Chart.js usage)
+                    const chartData = {
+                        labels: ['Properties', 'Units', 'Rent', 'Expenses', 'Messages'],
+                        datasets: [{
+                            data: [
+                                data.properties.total,
+                                data.properties.total_units,
+                                parseFloat(data.leases.total_monthly_rent || 0),
+                                parseFloat(data.revenue.total_expenses || 0),
+                                data.messages.unread
+                            ],
+                            backgroundColor: [
+                                'rgba(59, 130, 246, 0.5)',
+                                'rgba(34, 197, 94, 0.5)',
+                                'rgba(239, 68, 68, 0.5)',
+                                'rgba(245, 158, 11, 0.5)',
+                                'rgba(168, 85, 247, 0.5)'
+                            ],
+                            borderColor: [
+                                'rgb(59, 130, 246)',
+                                'rgb(34, 197, 94)',
+                                'rgb(239, 68, 68)',
+                                'rgb(245, 158, 11)',
+                                'rgb(168, 85, 247)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    };
+
+                    modalCharts.innerHTML = `
+                        <canvas id="analytics-bar-chart" width="400" height="200"></canvas>
+                        <script>
+                            window.analyticsChartConfig = ${JSON.stringify(chartData)};
+                        </script>
+                    `;
+                })
+                .catch(err => {
+                    console.error('Failed to fetch analytics', err);
+                    alert('Failed to load analytics data');
+                });
+        }
+
+        /** Hide the analytics modal */
+        function hideAnalyticsModal() {
+            const modal = document.getElementById('analytics-modal');
+            modal.classList.add('hidden');
+        }
+
+        /** Initialize: show modal on page load if desired */
+        document.addEventListener('DOMContentLoaded', function() {
+            // Uncomment to auto-show: showAnalyticsModal();
+        });
+    </script>
         <section class="ph-card lg:col-span-2">
             <div class="ph-card-header">
                 <h3 class="ph-card-title">Plan usage</h3>

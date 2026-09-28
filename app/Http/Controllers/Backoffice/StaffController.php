@@ -163,6 +163,18 @@ class StaffController extends Controller
         return back()->with('success', sprintf('%s was removed from the business.', $user->name));
     }
 
+    public function assignRole(User $user, Role $role): RedirectResponse
+    {
+        $business = $this->context->businessOrFail();
+
+        $this->authorize('manageStaff', $business);
+        $this->assertMemberOfActiveBusiness($user);
+
+        $this->membership->changeRole($business, $user, $role);
+
+        return back()->with('success', sprintf('%s is now %s.', $user->name, $role->label()));
+    }
+
     /**
      * 404 unless the route's user really is a member of the ACTIVE business.
      *

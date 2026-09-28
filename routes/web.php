@@ -183,6 +183,10 @@ Route::middleware(['auth'])->group(function () {
             ->middleware(array_merge($writable, ['permission:'.PermissionName::STAFF_REMOVE->value]))
             ->name('staff.destroy');
 
+        Route::post('/staff/{user}/assign-role', [StaffController::class, 'assignRole'])
+            ->middleware('permission:'.PermissionName::STAFF_ASSIGN_ROLE->value)
+            ->name('staff.assign_role');
+
         /* Subscription / billing */
         Route::get('/billing', [SubscriptionController::class, 'show'])
             ->name('subscription.show');
@@ -275,6 +279,154 @@ Route::middleware(['auth'])->group(function () {
     });
 
     /* ---------------------------------------------------------------- */
+    /* Documents — uploaded files attached to any business‑scoped model   */
+    /* ---------------------------------------------------------------- */
+    Route::middleware('permission:'.PermissionName::DOCUMENTS_VIEW->value)
+        ->name('documents.')->group(function () {
+        // Property‑scoped documents
+        Route::get('/properties/{property}/documents', [DocumentController::class, 'index'])
+            ->name('property.index');
+        Route::get('/properties/{property}/documents/create', [DocumentController::class, 'create'])
+            ->name('property.create');
+        Route::post('/properties/{property}/documents', [DocumentController::class, 'store'])
+            ->name('property.store');
+        Route::delete('/properties/{property}/documents/{document}', [DocumentController::class, 'destroy'])
+            ->name('property.destroy');
+
+        // Tenant‑scoped documents
+        Route::get('/tenants/{tenant}/documents', [DocumentController::class, 'indexTenant'])
+            ->name('tenant.index');
+        Route::get('/tenants/{tenant}/documents/create', [DocumentController::class, 'createTenant'])
+            ->name('tenant.create');
+        Route::post('/tenants/{tenant}/documents', [DocumentController::class, 'storeTenant'])
+            ->name('tenant.store');
+        Route::delete('/tenants/{tenant}/documents/{document}', [DocumentController::class, 'destroyTenant'])
+            ->name('tenant.destroy');
+
+        // Lease‑scoped documents
+        Route::get('/leases/{lease}/documents', [DocumentController::class, 'indexLease'])
+            ->name('lease.index');
+        Route::get('/leases/{lease}/documents/create', [DocumentController::class, 'createLease'])
+            ->name('lease.create');
+        Route::post('/leases/{lease}/documents', [DocumentController::class, 'storeLease'])
+            ->name('lease.store');
+        Route::delete('/leases/{lease}/documents/{document}', [DocumentController::class, 'destroyLease'])
+            ->name('lease.destroy');
+
+        // Payment‑scoped documents
+        Route::get('/payments/{payment}/documents', [DocumentController::class, 'indexPayment'])
+            ->name('payment.index');
+        Route::get('/payments/{payment}/documents/create', [DocumentController::class, 'createPayment'])
+            ->name('payment.create');
+        Route::post('/payments/{payment}/documents', [DocumentController::class, 'storePayment'])
+            ->name('payment.store');
+        Route::delete('/payments/{payment}/documents/{document}', [DocumentController::class, 'destroyPayment'])
+            ->name('payment.destroy');
+
+        // Expense‑scoped documents
+        Route::get('/expenses/{expense}/documents', [DocumentController::class, 'indexExpense'])
+            ->name('expense.index');
+        Route::get('/expenses/{expense}/documents/create', [DocumentController::class, 'createExpense'])
+            ->name('expense.create');
+        Route::post('/expenses/{expense}/documents', [DocumentController::class, 'storeExpense'])
+            ->name('expense.store');
+        Route::delete('/expenses/{expense}/documents/{document}', [DocumentController::class, 'destroyExpense'])
+            ->name('expense.destroy');
+
+        // Maintenance‑scoped documents
+        Route::get('/maintenance/{maintenance}/documents', [DocumentController::class, 'indexMaintenance'])
+            ->name('maintenance.index');
+        Route::get('/maintenance/{maintenance}/documents/create', [DocumentController::class, 'createMaintenance'])
+            ->name('maintenance.create');
+        Route::post('/maintenance/{maintenance}/documents', [DocumentController::class, 'storeMaintenance'])
+            ->name('maintenance.store');
+        Route::delete('/maintenance/{maintenance}/documents/{document}', [DocumentController::class, 'destroyMaintenance'])
+            ->name('maintenance.destroy');
+    });
+
+    /* ---------------------------------------------------------------- */
+    /* Journal entries – simple general‑ledger                           */
+    /* ---------------------------------------------------------------- */
+    Route::middleware('permission:'.PermissionName::JOURNALS_VIEW->value)
+        ->name('journals.')->group(function () {
+        Route::get('/journals/create', [JournalController::class, 'create'])
+            ->name('create');
+        Route::post('/journals', [JournalController::class, 'store'])
+            ->name('store');
+        Route::get('/journals/{entry}', [JournalController::class, 'show'])
+            ->name('show');
+        Route::get('/journals/{entry}/edit', [JournalController::class, 'edit'])
+            ->name('edit');
+        Route::put('/journals/{entry}', [JournalController::class, 'update'])
+            ->name('update');
+        Route::delete('/journals/{entry}', [JournalController::class, 'destroy'])
+            ->name('destroy');
+    });
+
+    /* ---------------------------------------------------------------- */
+    /* Messages – staff‑to‑tenant communications                       */
+    /* ---------------------------------------------------------------- */
+    Route::middleware('permission:'.PermissionName::MESSAGES_VIEW->value)
+        ->name('messages.')->group(function () {
+        Route::get('/', [MessageController::class, 'index'])
+            ->name('index');
+        Route::get('/create', [MessageController::class, 'create'])
+            ->name('create');
+        Route::post('/', [MessageController::class, 'store'])
+            ->name('store');
+        Route::get('/{message}/read-toggle', [MessageController::class, 'readToggle'])
+            ->name('read-toggle');
+        Route::delete('/{message}', [MessageController::class, 'destroy'])
+            ->name('destroy');
+    });
+
+    Route::middleware('permission:'.PermissionName::MESSAGES_THREAD->value)
+        ->name('messages.thread.')->group(function () {
+        Route::post('/{message}/reply', [MessageController::class, 'reply'])
+            ->name('reply');
+    });
+
+    Route::middleware('permission:'.PermissionName::MESSAGES_ATTACH->value)
+        ->name('messages.attach.')->group(function () {
+        Route::post('/{message}/attach', [MessageController::class, 'attach'])
+            ->name('attach');
+        Route::delete('/{message}/attach/{attachment}', [MessageController::class, 'detach'])
+            ->name('detach');
+    });
+
+    Route::middleware('permission:'.PermissionName::MESSAGES_NOTIFY->value)
+        ->name('messages.notify.')->group(function () {
+        Route::post('/preferences', [MessageController::class, 'updatePreferences'])
+            ->name('preferences');
+    });
+
+    /* ---------------------------------------------------------------- */
+    /* Analytics – dashboard metrics and reports                         */
+    /* ---------------------------------------------------------------- */
+    Route::middleware('permission:'.PermissionName::ANALYTICS_VIEW->value)
+        ->name('analytics.')->group(function () {
+        Route::get('/', [AnalyticsController::class, 'index'])
+            ->name('index');
+    });
+
+    /* ---------------------------------------------------------------- */
+    /* Lease renewal notices                                               */
+    /* ---------------------------------------------------------------- */
+    Route::middleware('permission:'.PermissionName::RENEWAL_NOTICES_VIEW->value)
+        ->name('renewal_notices.')->group(function () {
+        Route::get('/leases/{lease}/renewal-notices', [RenewalNoticeController::class, 'index'])
+            ->name('index');
+        Route::get('/leases/{lease}/renewal-notices/create', [RenewalNoticeController::class, 'create'])
+            ->name('create');
+        Route::post('/leases/{lease}/renewal-notices', [RenewalNoticeController::class, 'store'])
+            ->name('store');
+        Route::get('/renewal-notices/{notice}/read-toggle', [RenewalNoticeController::class, 'readToggle'])
+            ->name('read-toggle');
+        Route::delete('/renewal-notices/{notice}', [RenewalNoticeController::class, 'destroy'])
+            ->name('destroy');
+    });
+
+    /* ---------------------------------------------------------------- */
     /* Tenant portal — Phase 14.                                          */
     /*                                                                  */
     /* The `tenant` gate and the group exist from day one. Until the     */
@@ -288,7 +440,7 @@ Route::middleware(['auth'])->group(function () {
     /* with a business to the dashboard.                                 */
     /* ---------------------------------------------------------------- */
     Route::prefix('portal')->name('portal.')->middleware(['tenant'])->group(function () {
-        Route::get('/', fn () => view('portal.pending'))->name('home');
+        Route::get('/', fn () => view('portal.pending'))->name('portal.home');
     });
 });
 

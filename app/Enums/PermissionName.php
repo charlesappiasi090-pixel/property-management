@@ -97,6 +97,7 @@ enum PermissionName: string
      * any privilege-escalation path is offered.
      */
     case STAFF_GRANT_OWNER = 'staff.grant_owner';
+    case STAFF_ASSIGN_ROLE = 'staff.assign_role';
 
     /* -------------------------------------------------- Reports */
     case REPORTS_VIEW = 'reports.view';
@@ -104,8 +105,34 @@ enum PermissionName: string
     case REPORTS_OCCUPANCY = 'reports.occupancy';
     case REPORTS_EXPORT = 'reports.export';
 
+    /* -------------------------------------------------- Renewal Notices */
+    case RENEWAL_NOTICES_VIEW = 'renewal_notices.view';
+    case RENEWAL_NOTICES_CREATE = 'renewal_notices.create';
+    case RENEWAL_NOTICES_UPDATE = 'renewal_notices.update';
+    case RENEWAL_NOTICES_DELETE = 'renewal_notices.delete';
+
+    /* -------------------------------------------------- Journal */
+    case JOURNALS_VIEW = 'journals.view';
+    case JOURNALS_CREATE = 'journals.create';
+    case JOURNALS_UPDATE = 'journals.update';
+    case JOURNALS_DELETE = 'journals.delete';
+
+    /* -------------------------------------------------- Messages */
+    case MESSAGES_VIEW = 'messages.view';
+    case MESSAGES_SEND = 'messages.send';
+    case MESSAGES_REPLY = 'messages.reply';
+    case MESSAGES_DELETE = 'messages.delete';
+
+    /* -------------------------------------------------- Threading & attachments */
+    case MESSAGES_THREAD = 'messages.thread';
+    case MESSAGES_ATTACH = 'messages.attach';
+    case MESSAGES_NOTIFY = 'messages.notify';
+
     /* -------------------------------------------------- Audit */
     case AUDIT_VIEW = 'audit.view';
+
+    /* -------------------------------------------------- Analytics */
+    case ANALYTICS_VIEW = 'analytics.view';
 
     /* -------------------------------------------------- Settings & billing */
     case SETTINGS_MANAGE = 'settings.manage';
